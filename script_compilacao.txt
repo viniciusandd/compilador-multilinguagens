@@ -1,0 +1,1 @@
+g++ teste.cpp -o teste 2> erros.txt && echo "Funcionou" || echo "Nao funcionou"
