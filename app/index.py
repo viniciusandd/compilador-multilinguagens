@@ -5,10 +5,10 @@ import subprocess
 from difflib import SequenceMatcher
 
 class Database():
-    def __init__(self, usuario, senha):
+    def __init__(self, banco, usuario, senha):
         try:
             self.connection = psycopg2.connect(
-                "dbname='banco_local' user='%s' host='localhost' password='%s' port='5432'" % (usuario, senha))
+                "dbname='%s' user='%s' host='localhost' password='%s' port='5432'" % (banco, usuario, senha))
             self.connection.autocommit = True
             self.cursor = self.connection.cursor()
             print("Conexão com o banco de dados efetuada com sucesso!")
@@ -24,11 +24,12 @@ class Database():
         self.cursor.execute(sql)
 
 fila_submissoes = []
+banco     = input("Informe o nome do banco de dados: ")
+usuario   = input("Informe o nome do usuário para logar no database: ")
+senha     = input("Informe sua senha para logar no database: ")
+database  = Database(banco, usuario, senha)
+DIRETORIO = "/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/"
 
-usuario = input("Informe o nome do usuário para logar no database: ")
-senha   = input("Informe sua senha para logar no database: ")
-
-database = Database(usuario, senha)
 
 def BuscarSubmissoes():
     global fila_submissoes, database
@@ -72,15 +73,13 @@ def Script(arquivo, linguagem, problema):
     # 2 - Kotlin
     # 3 - Java
     # 4 - Python
-    # 5 - Ruby
 
-    entrada_1001 = '/home/vinicius/Documentos/Python/Compilador/arquivos/entradas/1001.in'
-    entrada_1002 = '/home/vinicius/Documentos/Python/Compilador/arquivos/entradas/1002.in'
-    entrada_1003 = '/home/vinicius/Documentos/Python/Compilador/arquivos/entradas/1003.in'
-
-    saida_1001 = '/home/vinicius/Documentos/Python/Compilador/arquivos/saidas/1001.out'
-    saida_1002 = '/home/vinicius/Documentos/Python/Compilador/arquivos/saidas/1002.out'
-    saida_1003 = '/home/vinicius/Documentos/Python/Compilador/arquivos/saidas/1003.out'
+    entrada_1001 = '%sentradas/1001.in' % DIRETORIO
+    entrada_1002 = '%sentradas/1002.in' % DIRETORIO
+    entrada_1003 = '%sentradas/1003.in' % DIRETORIO
+    saida_1001   = '%ssaidas/1001.out' % DIRETORIO
+    saida_1002   = '%ssaidas/1002.out' % DIRETORIO
+    saida_1003   = '%ssaidas/1003.out' % DIRETORIO
 
     if problema == 1001:
         entrada = entrada_1001
@@ -93,12 +92,12 @@ def Script(arquivo, linguagem, problema):
         saida = saida_1003
 
     if linguagem == 1:
-        compilar = "g++ ../arquivos/file%s.cpp -o ../arquivos/compilacoes/file%s 2> " \
-                       "../arquivos/erros/erros_file%s.txt && echo 'Compilado com sucesso!' || cat ../arquivos/erros/erros_file%s.txt" % (
-                       arquivo, arquivo, arquivo, arquivo)
+        compilar = "g++ %sfile%s.cpp -o %scompilacoes/file%s 2> " \
+                       "%serros/erros_file%s.txt && echo 'Compilado com sucesso!' || cat %serros/erros_file%s.txt" \
+                   % (DIRETORIO, arquivo, DIRETORIO, arquivo, DIRETORIO, arquivo, DIRETORIO, arquivo)
 
-        executar = "./../arquivos/compilacoes/file%s < %s " \
-                   "> /home/vinicius/Documentos/Python/Compilador/arquivos/compilacoes/file%s.txt" % (arquivo, entrada, arquivo)
+        executar = "cd %scompilacoes/ && ./file%s < %s " \
+                   "> %scompilacoes/file%s.txt" % (DIRETORIO, arquivo, entrada, DIRETORIO, arquivo)
 
     elif linguagem == 2:
         compilar = "kotlinc ../arquivos/%s.kt -include-runtime -d ../arquivos/compilacoes/%s.jar 2> " \
@@ -128,7 +127,7 @@ def Script(arquivo, linguagem, problema):
 
         subprocess.check_output(executar, shell=True)
 
-        resposta = CalcularPercentualDeErro("/home/vinicius/Documentos/Python/Compilador/arquivos/compilacoes/file%s.txt" % arquivo, saida)
+        resposta = CalcularPercentualDeErro("%scompilacoes/file%s.txt" % (DIRETORIO, arquivo), saida)
         if float(resposta) <= 0:
             print("Resposta correta: file%s" % arquivo)
             AtualizarStatus(arquivo, "Correta")
