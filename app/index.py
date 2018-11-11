@@ -1,6 +1,7 @@
 import psycopg2
 import time
 from threading import Thread
+from threading import Lock
 import subprocess
 from difflib import SequenceMatcher
 
@@ -29,50 +30,37 @@ usuario   = input("Informe o nome do usuário para logar no database: ")
 senha     = input("Informe sua senha para logar no database: ")
 database  = Database(banco, usuario, senha)
 DIRETORIO = "/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/"
-
+bloqueio = Lock()
 
 def BuscarSubmissoes():
-    global fila_submissoes, database
+    global fila_submissoes, database, bloqueio
 
     while True:
-        time.sleep(3)
+        time.sleep(5)
 
-        fila_submissoes = database.query("SELECT ID, STATUS, LINGUAGEM_ID, PROBLEMA_ID FROM SUBMISSAO WHERE STATUS = 'PROCESSANDO' ORDER BY ID")
+        fila_submissoes = database.query("SELECT ID, STATUS, LINGUAGEM_ID, PROBLEMA_ID FROM SUBMISSAO WHERE STATUS = 'Processando' ORDER BY ID")
 
         if len(fila_submissoes) > 0:
             print(fila_submissoes)
-            AtualizarStatusCompilando()
-
-def AtualizarStatusCompilando():
-    global fila_submissoes, database
-
-    for i in fila_submissoes:
-        sql = "UPDATE SUBMISSAO SET STATUS = 'COMPILANDO' WHERE ID = %s" %i[0]
-        database.execute(sql)
+            for i in fila_submissoes:
+                AtualizarStatus(i[0], "Compilando")
+              # 1: ID, 2: linguagem, 3: problema
+                Script(i[0], i[2], i[3])
 
 def AtualizarStatus(id, status):
     sql = "UPDATE SUBMISSAO SET STATUS = '%s' WHERE ID = %s" % (status, id)
     database.execute(sql)
 
-def AtualizarResposta(id, resposta):
-    sql = "UPDATE SUBMISSAO SET RESPOSTA = '%s' WHERE ID = %s" % (resposta, id)
+def AtualizarCompilacao(status, resposta, id):
+    sql = "UPDATE SUBMISSAO SET STATUS = '%s', RESPOSTA = '%s' WHERE ID = %s" % (status, resposta, id)
     database.execute(sql)
-
-def Compilando():
-    # O nome do arquivo será o ID do registro
-    while True:
-        time.sleep(3)
-        for i in fila_submissoes:
-            # print("ID: " + str(i[0]) + " | Linguagem: " + str(i[2]))
-            Script(i[0], i[2], i[3])
 
 def Script(arquivo, linguagem, problema):
 
     # Linguagens
     # 1 - C++
-    # 2 - Kotlin
+    # 2 - Python
     # 3 - Java
-    # 4 - Python
 
     entrada_1001 = '%sentradas/1001.in' % DIRETORIO
     entrada_1002 = '%sentradas/1002.in' % DIRETORIO
@@ -100,25 +88,18 @@ def Script(arquivo, linguagem, problema):
                    "> %scompilacoes/file%s.txt" % (DIRETORIO, arquivo, entrada, DIRETORIO, arquivo)
 
     elif linguagem == 2:
-        compilar = "kotlinc ../arquivos/%s.kt -include-runtime -d ../arquivos/compilacoes/%s.jar 2> " \
-                   "../arquivos/erros/erros_%s.txt && echo 'Compilado com sucesso!' || cat ../arquivos/erros/erros_%s.txt" % (
-                       arquivo, arquivo, arquivo, arquivo)
+        compilar = "python -m py_compile %sfile%s.py 2> " \
+                   "%serros/erros_file%s.txt && echo 'Compilado com sucesso!' || " \
+                   "cat %serros/erros_file%s.txt" % (DIRETORIO, arquivo, DIRETORIO, arquivo, DIRETORIO, arquivo)
+
+        executar = "python3 %s__pycache__/file%s.cpython-35.pyc < %s > %scompilacoes/file%s.txt" % (DIRETORIO, arquivo, entrada, DIRETORIO, arquivo)
+
     elif linguagem == 3:
-        compilar = "javac ../arquivos/file%s.java 2> " \
-                   "../arquivos/erros/erros_file%s.txt && echo 'Compilado com sucesso!' || " \
-                   "cat ../arquivos/erros/erros_file%s.txt" % (arquivo, arquivo, arquivo)
+        compilar = "javac %sfile%s.java 2> " \
+                   "%serros/erros_file%s.txt && echo 'Compilado com sucesso!' || " \
+                   "cat %serros/erros_file%s.txt" % (DIRETORIO, arquivo, DIRETORIO, arquivo, DIRETORIO, arquivo)
 
-        executar = "cd ../arquivos/ && java file%s" % arquivo
-
-    elif linguagem == 4:
-        compilar = "python -m py_compile ../arquivos/file%s.py 2> " \
-                   "../arquivos/erros/erros_file%s.txt && echo 'Compilado com sucesso!' || " \
-                   "cat ../arquivos/erros/erros_file%s.txt" % (arquivo, arquivo, arquivo)
-
-        executar = "python3 ../arquivos/__pycache__/file%s.cpython-35.pyc" % arquivo
-
-    elif linguagem == 5:
-        pass
+        executar = "cd %s && java file%s < %s > %scompilacoes/file%s.txt" % (DIRETORIO, arquivo, entrada, DIRETORIO, arquivo)
 
     compilacao = subprocess.check_output(compilar, shell=True)
 
@@ -130,18 +111,16 @@ def Script(arquivo, linguagem, problema):
         resposta = CalcularPercentualDeErro("%scompilacoes/file%s.txt" % (DIRETORIO, arquivo), saida)
         if float(resposta) <= 0:
             print("Resposta correta: file%s" % arquivo)
-            AtualizarStatus(arquivo, "Correta")
-            AtualizarResposta(arquivo, "Solução compilada e executada com sucesso!")
+            AtualizarCompilacao("Correta", "Solução compilada e executada com sucesso!", arquivo)
         else:
             print("Resposta %s incorreta: file%s" % (resposta, arquivo))
-            AtualizarStatus(arquivo, "Incorreta")
-            AtualizarResposta(arquivo, "Solução incorreta: %s" % resposta + "%")
+            AtualizarCompilacao("Incorreta", "Solução incorreta: %s" % resposta + "%", arquivo)
 
     else:
         print("Erro ao compilar: file%s" % arquivo)
         compilacao_frmt = compilacao.decode()
-        AtualizarResposta(arquivo, compilacao_frmt.replace("'", "´"))
-        AtualizarStatus(arquivo, "Erro de compilação")
+        AtualizarCompilacao("Erro de compilação", compilacao_frmt.replace("'", "´").
+                            replace("/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/", ""), arquivo)
 
 def CalcularPercentualDeErro(arquivo, saida):
     compilacao     = open(arquivo).read()
@@ -155,8 +134,5 @@ def Main():
 
     buscar_submissoes = Thread(target=BuscarSubmissoes)
     buscar_submissoes.start()
-
-    compilando = Thread(target=Compilando)
-    compilando.start()
 
 Main()
