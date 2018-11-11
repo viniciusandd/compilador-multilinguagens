@@ -4,12 +4,13 @@ from threading import Thread
 import subprocess
 
 class Database():
-    def __init__(self):
+    def __init__(self, banco, usuario, senha):
         try:
             self.connection = psycopg2.connect(
-                "dbname='banco_local' user='postgres' host='localhost' password='andrade147741' port='5432'")
+                "dbname='%s' user='%s' host='localhost' password='%s' port='5432'" % (banco, usuario, senha))
             self.connection.autocommit = True
             self.cursor = self.connection.cursor()
+            print("Conexão com o banco de dados efetuada com sucesso!")
         except:
             print("Erro ao conectar no database!")
 
