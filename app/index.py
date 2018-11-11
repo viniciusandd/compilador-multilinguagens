@@ -1,7 +1,6 @@
 import psycopg2
 import time
 from threading import Thread
-from threading import Lock
 import subprocess
 from difflib import SequenceMatcher
 
@@ -30,7 +29,6 @@ usuario   = input("Informe o nome do usuário para logar no database: ")
 senha     = input("Informe sua senha para logar no database: ")
 database  = Database(banco, usuario, senha)
 DIRETORIO = "/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/"
-bloqueio = Lock()
 
 def BuscarSubmissoes():
     global fila_submissoes, database, bloqueio
