@@ -151,11 +151,25 @@ def Bot():
 
     while True:
 
-        time.sleep(5)
+        time.sleep(7)
 
         bloqueio.acquire()
 
         print(" ---------------  CRIANDO UM ARQUIVO NOVO --------------- ")
+
+        sql = "SELECT MAX(ID) FROM SUBMISSAO"
+        retorno = database.query(sql)
+
+        print(retorno)
+
+        max_id = retorno[0][0]
+
+        if not max_id:
+            max_id = 0
+
+        id = max_id + 1
+
+        print("ID ATUAL: %s" % id)
 
         codigos_corretos_cpp = \
             [{1001: """
@@ -310,7 +324,7 @@ def Bot():
                 {1001: """
         import java.util.Scanner;
 
-        public class file3 { 
+        public class file%s { 
 
            public static void main(String []args) {
 
@@ -322,13 +336,13 @@ def Bot():
              System.out.println("X = " + soma);
            }
         }    
-            """},
+            """ % id},
                 {1002: """
         import java.util.Scanner;
         import java.util.Locale;
         import java.text.DecimalFormat;
 
-        public class file12 {
+        public class file%s {
            public static void main(String []args) {
              Scanner sc = new Scanner(System.in);
              sc.useLocale(Locale.ENGLISH);
@@ -337,15 +351,15 @@ def Bot():
              area = pi * (raio * raio);
              DecimalFormat formato = new DecimalFormat("#.####");
              String valor = String.valueOf(formato.format(area));
-             valor = valor.replace(',','.');
+             valor = valor.replace(",",".");
              System.out.println("A=" + valor);
            }
         }    
-            """},
+            """ % id},
                 {1003: """
         import java.util.Scanner;
 
-        public class file3 { 
+        public class file%s { 
 
            public static void main(String []args) {
 
@@ -357,7 +371,7 @@ def Bot():
              System.out.println("SOMA = " + soma);
            }
         }    
-            """}
+            """ % id}
             ]
 
         codigos_errados_java = \
@@ -365,7 +379,7 @@ def Bot():
                 {1001: """
         import java.util.Scanner;
 
-        public class file3 { 
+        public class file%s { 
 
            public static void main(String []args) {
 
@@ -377,13 +391,13 @@ def Bot():
              System.out.println("X = " + soma)
            }
         }    
-            """},
+            """ % id},
                 {1002: """
         import java.util.Scanner;
         import java.util.Locale;
         import java.text.DecimalFormat;
 
-        public class file12 {
+        public class file%s {
            public static void main(String []args) {
              Scanner sc = new Scanner(System.in);
              sc.useLocale(Locale.ENGLISH);
@@ -391,15 +405,15 @@ def Bot():
              raio = sc.nextDouble();
              area = pi * (raio * raio);
              DecimalFormat formato = new DecimalFormat("#.####");
-             String valor = String.valueOf(formato.format(area));         
+             String valor = String.valueOf(formato.format(area));             
              System.out.println("A=" + valor);
            }
         }    
-            """},
+            """ % id},
                 {1003: """
         import java.util.Scanner;
 
-        public class file3 { 
+        public class file%s { 
 
            public static void main(String []args) {
 
@@ -411,15 +425,8 @@ def Bot():
              System.out.println("soma=" + soma);
            }
         }    
-            """}
+            """ % id}
             ]
-
-        sql = "SELECT MAX(ID) FROM SUBMISSAO"
-        retorno = database.query(sql)
-        max_id = retorno[0][0]
-        id = max_id + 1
-
-        print("ID ATUAL: %s" % id)
 
         registro = random.randrange(0, 3)  # 0 -> 1001, 1 -> 1002, 2 -> 1003
         linguagem = random.randrange(1, 4)
@@ -461,16 +468,16 @@ def Bot():
 
             ext = ".java"
 
-        print(codigo)
+        #print(codigo)
 
         comando_criar = "touch %sfile%s%s && echo '%s' > %sfile%s%s" % (DIRETORIO, id, ext, codigo, DIRETORIO, id, ext)
-        print(comando_criar)
+        #print(comando_criar)
 
         subprocess.check_output(comando_criar, shell=True)
 
         sql = "INSERT INTO SUBMISSAO (ID, STATUS, RESPOSTA, LINGUAGEM_ID, PROBLEMA_ID) VALUES (%s, 'Processando', '', %s, %s)" \
               % (id, linguagem, problema)
-        print(sql)
+        #print(sql)
         database.execute(sql)
 
         bloqueio.release()
