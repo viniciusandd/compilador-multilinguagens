@@ -4,6 +4,7 @@ from threading import Thread
 import subprocess
 from difflib import SequenceMatcher
 from threading import Lock
+import random
 
 class Database():
     def __init__(self, banco, usuario, senha):
@@ -146,6 +147,334 @@ def CalcularPercentualDeErro(arquivo, saida):
     erro           = "%.2f" % (100.0 - resposta)
     return erro
 
+def Bot():
+
+    while True:
+
+        time.sleep(5)
+
+        bloqueio.acquire()
+
+        print(" ---------------  CRIANDO UM ARQUIVO NOVO --------------- ")
+
+        codigos_corretos_cpp = \
+            [{1001: """
+        #include <iostream>
+
+        using namespace std;
+
+        int main() {
+
+          int a, b;
+
+          cin >> a >> b;
+
+          cout << "X = " << a + b << endl;
+
+          return 0;
+        }    
+        """},
+             {1002: """
+        #include <iostream>
+        #include <iomanip>
+        #include <cmath>
+        using namespace std;
+
+        int main () {
+          cout << fixed << setprecision(4);
+
+          double pi=3.14159, raio, area;
+          cin >> raio;
+          area = (pi * (pow(raio,2)));
+          cout << "A=" << area << endl;
+
+          return 0;
+        }    
+        """},
+             {1003: """
+        #include <iostream>
+
+        using namespace std;
+
+        int main() {
+
+          int a, b;
+
+          cin >> a >> b;
+
+          cout << "SOMA = " << a + b << endl;
+
+          return 0;
+        }    
+        """}]
+
+        codigos_errados_cpp = \
+            [{1001: """
+        #include <iostream>
+
+        using namespace std;
+
+        int main() {
+
+          int a, b;
+
+          cin >> a >> b;
+
+          cout << "X=" << a + b << endl;
+
+          return 0;
+        }    
+        """},
+             {1002: """
+        #include <iostream>
+        #include <iomanip>
+        #include <cmath>
+        using namespace std;
+
+        int main () {
+          cout << fixed << setprecision(4);
+
+          double pi=3.14159, raio, area;
+          cin >> raio;
+          area = (pi * (pow(raio,2)));
+          cout << "AREA=" << area << endl;
+
+          return 0;
+        }    
+        """},
+             {1003: """
+        #include <iostream>
+
+        using namespace std;
+
+        int main() {
+
+          int a, b;
+
+          cin >> a >> b;
+
+          cout << "SOMA = " << a + b << endl
+
+          return 0;
+        }    
+        """}]
+
+        codigos_corretos_python = \
+            [
+                {1001: """
+        x = int(input())
+        y = int(input())
+        soma = x + y
+        print("X = %s" % soma)        
+        """},
+                {1002: """
+        pi = 3.14159
+        raio = float(input())
+
+        area = pi * (raio * raio)
+
+        print("A=%.4f" % area)        
+        """},
+                {1003: """
+        x = int(input())
+        y = int(input())
+        soma = x + y
+        print("SOMA = %s" % soma)          
+        """}]
+
+        codigos_errados_python = \
+            [
+                {1001: """
+        x = int(input())
+        y = int(input())
+        soma = x + y
+        print("Y = %s" % soma)        
+        """},
+                {1002: """
+        pi = 3.14159
+        raio = float(input())
+
+        area = pi * (raio * raio)
+
+        print("AREA=%.4f" % area)        
+        """},
+                {1003: """
+        x = int(input())
+        y = int(input())
+        soma = x + y
+            print("SOMA = %s" % soma)          
+        """}]
+
+        codigos_corretos_java = \
+            [
+                {1001: """
+        import java.util.Scanner;
+
+        public class file3 { 
+
+           public static void main(String []args) {
+
+             Scanner sc = new Scanner(System.in);
+             int x, y, soma;
+             x = sc.nextInt();
+             y = sc.nextInt();
+             soma = x + y;
+             System.out.println("X = " + soma);
+           }
+        }    
+            """},
+                {1002: """
+        import java.util.Scanner;
+        import java.util.Locale;
+        import java.text.DecimalFormat;
+
+        public class file12 {
+           public static void main(String []args) {
+             Scanner sc = new Scanner(System.in);
+             sc.useLocale(Locale.ENGLISH);
+             double raio, pi=3.14159, area;
+             raio = sc.nextDouble();
+             area = pi * (raio * raio);
+             DecimalFormat formato = new DecimalFormat("#.####");
+             String valor = String.valueOf(formato.format(area));
+             valor = valor.replace(',','.');
+             System.out.println("A=" + valor);
+           }
+        }    
+            """},
+                {1003: """
+        import java.util.Scanner;
+
+        public class file3 { 
+
+           public static void main(String []args) {
+
+             Scanner sc = new Scanner(System.in);
+             int x, y, soma;
+             x = sc.nextInt();
+             y = sc.nextInt();
+             soma = x + y;
+             System.out.println("SOMA = " + soma);
+           }
+        }    
+            """}
+            ]
+
+        codigos_errados_java = \
+            [
+                {1001: """
+        import java.util.Scanner;
+
+        public class file3 { 
+
+           public static void main(String []args) {
+
+             Scanner sc = new Scanner(System.in);
+             int x, y, soma;
+             x = sc.nextInt();
+             y = sc.nextInt();
+             soma = x + y;
+             System.out.println("X = " + soma)
+           }
+        }    
+            """},
+                {1002: """
+        import java.util.Scanner;
+        import java.util.Locale;
+        import java.text.DecimalFormat;
+
+        public class file12 {
+           public static void main(String []args) {
+             Scanner sc = new Scanner(System.in);
+             sc.useLocale(Locale.ENGLISH);
+             double raio, pi=3.14159, area;
+             raio = sc.nextDouble();
+             area = pi * (raio * raio);
+             DecimalFormat formato = new DecimalFormat("#.####");
+             String valor = String.valueOf(formato.format(area));         
+             System.out.println("A=" + valor);
+           }
+        }    
+            """},
+                {1003: """
+        import java.util.Scanner;
+
+        public class file3 { 
+
+           public static void main(String []args) {
+
+             Scanner sc = new Scanner(System.in);
+             int x, y, soma;
+             x = sc.nextInt();
+             y = sc.nextInt();
+             soma = x + y;
+             System.out.println("soma=" + soma);
+           }
+        }    
+            """}
+            ]
+
+        sql = "SELECT MAX(ID) FROM SUBMISSAO"
+        retorno = database.query(sql)
+        max_id = retorno[0][0]
+        id = max_id + 1
+
+        print("ID ATUAL: %s" % id)
+
+        registro = random.randrange(0, 3)  # 0 -> 1001, 1 -> 1002, 2 -> 1003
+        linguagem = random.randrange(1, 4)
+        correto_errado = random.randrange(1, 3)
+
+        print("LINGUAGEM: %s" % linguagem)
+        print("CORRETO OU ERRADO: %s" % correto_errado)
+
+        if registro == 0:
+            problema = 1001
+        elif registro == 1:
+            problema = 1002
+        elif registro == 2:
+            problema = 1003
+
+        print("PROBLEMA: %s" % problema)
+
+        if linguagem == 1:  # C++
+            if correto_errado == 1:
+                codigo = codigos_corretos_cpp[registro][problema]
+            elif correto_errado == 2:
+                codigo = codigos_errados_cpp[registro][problema]
+
+            ext = ".cpp"
+
+        elif linguagem == 2:  # Python
+            if correto_errado == 1:
+                codigo = codigos_corretos_python[registro][problema]
+            elif correto_errado == 2:
+                codigo = codigos_errados_python[registro][problema]
+
+            ext = ".py"
+
+        elif linguagem == 3:  # Java
+            if correto_errado == 1:
+                codigo = codigos_corretos_java[registro][problema]
+            elif correto_errado == 2:
+                codigo = codigos_errados_java[registro][problema]
+
+            ext = ".java"
+
+        print(codigo)
+
+        comando_criar = "touch %sfile%s%s && echo '%s' > %sfile%s%s" % (DIRETORIO, id, ext, codigo, DIRETORIO, id, ext)
+        print(comando_criar)
+
+        subprocess.check_output(comando_criar, shell=True)
+
+        sql = "INSERT INTO SUBMISSAO (ID, STATUS, RESPOSTA, LINGUAGEM_ID, PROBLEMA_ID) VALUES (%s, 'Processando', '', %s, %s)" \
+              % (id, linguagem, problema)
+        print(sql)
+        database.execute(sql)
+
+        bloqueio.release()
+
 def Main():
 
     buscar_submissoes = Thread(target=BuscarSubmissoes)
@@ -153,5 +482,8 @@ def Main():
 
     compilando = Thread(target=Compilando)
     compilando.start()
+
+    bot = Thread(target=Bot)
+    bot.start()
 
 Main()

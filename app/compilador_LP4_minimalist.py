@@ -1,9 +1,6 @@
 import psycopg2
-import time
-from threading import Thread
 import subprocess
 from difflib import SequenceMatcher
-from threading import Lock
 
 class Database():
     def __init__(self, banco, usuario, senha):
