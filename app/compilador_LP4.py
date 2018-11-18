@@ -133,7 +133,6 @@ def CalcularPercentualDeErro(arquivo, saida):
     return erro
 
 def Bot():
-
     j = 0
     while j < 500:
 
