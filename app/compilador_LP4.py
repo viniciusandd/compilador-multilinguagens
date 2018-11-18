@@ -37,13 +37,17 @@ def BuscarSubmissoes():
     global fila_submissoes, database, bloqueio
 
     while True:
-        time.sleep(3)
+        bloqueio.acquire()
 
         fila_submissoes = database.query("SELECT ID, STATUS, LINGUAGEM_ID, PROBLEMA_ID FROM SUBMISSAO WHERE STATUS = 'Processando' ORDER BY ID")
         if len(fila_submissoes) > 0:
             print(fila_submissoes)
             for i in fila_submissoes:
                 AtualizarStatus(i[0], "Compilando")
+                # 1: ID, 2: linguagem, 3: problema
+                Script(i[0], i[2], i[3])
+
+        bloqueio.release()
 
 def AtualizarStatus(id, status):
     sql = "UPDATE SUBMISSAO SET STATUS = '%s' WHERE ID = %s" % (status, id)
@@ -52,25 +56,6 @@ def AtualizarStatus(id, status):
 def AtualizarCompilacao(status, resposta, id):
     sql = "UPDATE SUBMISSAO SET STATUS = '%s', RESPOSTA = '%s' WHERE ID = %s" % (status, resposta, id)
     database.execute(sql)
-
-def Compilando():
-    global bloqueio
-
-    while True:
-        if len(fila_submissoes) > 0:
-            bloqueio.acquire()
-
-            print("COMPILANDO pegou o bloqueio!")
-
-            for i in fila_submissoes:
-                # print("ID: " + str(i[0]) + " | Linguagem: " + str(i[2]))
-                Script(i[0], i[2], i[3])
-
-            fila_submissoes.clear()
-
-            bloqueio.release()
-
-            print("COMPILANDO liberou o bloqueio!")
 
 def Script(arquivo, linguagem, problema):
 
@@ -149,9 +134,10 @@ def CalcularPercentualDeErro(arquivo, saida):
 
 def Bot():
 
-    while True:
+    j = 0
+    while j < 500:
 
-        time.sleep(7)
+        j = j + 1
 
         bloqueio.acquire()
 
@@ -173,258 +159,210 @@ def Bot():
 
         codigos_corretos_cpp = \
             [{1001: """
-        #include <iostream>
-
-        using namespace std;
-
-        int main() {
-
-          int a, b;
-
-          cin >> a >> b;
-
-          cout << "X = " << a + b << endl;
-
-          return 0;
-        }    
+#include <iostream>
+using namespace std;
+int main() {
+  int a, b;
+  cin >> a >> b;
+  cout << "X = " << a + b << endl;
+  return 0;
+}    
         """},
              {1002: """
-        #include <iostream>
-        #include <iomanip>
-        #include <cmath>
-        using namespace std;
-
-        int main () {
-          cout << fixed << setprecision(4);
-
-          double pi=3.14159, raio, area;
-          cin >> raio;
-          area = (pi * (pow(raio,2)));
-          cout << "A=" << area << endl;
-
-          return 0;
-        }    
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+using namespace std;
+int main () {
+  cout << fixed << setprecision(4);
+  double pi=3.14159, raio, area;
+  cin >> raio;
+  area = (pi * (pow(raio,2)));
+  cout << "A=" << area << endl;
+  return 0;
+}    
         """},
              {1003: """
-        #include <iostream>
-
-        using namespace std;
-
-        int main() {
-
-          int a, b;
-
-          cin >> a >> b;
-
-          cout << "SOMA = " << a + b << endl;
-
-          return 0;
-        }    
+#include <iostream>
+using namespace std;
+int main() {
+  int a, b;
+  cin >> a >> b;
+  cout << "SOMA = " << a + b << endl;
+  return 0;
+}    
         """}]
 
         codigos_errados_cpp = \
             [{1001: """
-        #include <iostream>
-
-        using namespace std;
-
-        int main() {
-
-          int a, b;
-
-          cin >> a >> b;
-
-          cout << "X=" << a + b << endl;
-
-          return 0;
-        }    
+#include <iostream>
+using namespace std;
+int main() {
+  int a, b;
+  cin >> a >> b;
+  cout << "X=" << a + b << endl;
+  return 0;
+}    
         """},
              {1002: """
-        #include <iostream>
-        #include <iomanip>
-        #include <cmath>
-        using namespace std;
-
-        int main () {
-          cout << fixed << setprecision(4);
-
-          double pi=3.14159, raio, area;
-          cin >> raio;
-          area = (pi * (pow(raio,2)));
-          cout << "AREA=" << area << endl;
-
-          return 0;
-        }    
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+using namespace std;
+int main () {
+  cout << fixed << setprecision(4);
+  double pi=3.14159, raio, area;
+  cin >> raio;
+  area = (pi * (pow(raio,2)));
+  cout << "AREA=" << area << endl;
+  return 0;
+}    
         """},
              {1003: """
-        #include <iostream>
-
-        using namespace std;
-
-        int main() {
-
-          int a, b;
-
-          cin >> a >> b;
-
-          cout << "SOMA = " << a + b << endl
-
-          return 0;
-        }    
+#include <iostream>
+using namespace std;
+int main() {
+  int a, b;
+  cin >> a >> b;
+  cout << "SOMA = " << a + b << endl
+  return 0;
+}    
         """}]
 
         codigos_corretos_python = \
             [
                 {1001: """
-        x = int(input())
-        y = int(input())
-        soma = x + y
-        print("X = %s" % soma)        
-        """},
-                {1002: """
-        pi = 3.14159
-        raio = float(input())
-
-        area = pi * (raio * raio)
-
-        print("A=%.4f" % area)        
+x = int(input())
+y = int(input())
+soma = x + y
+print("X = %s" % soma)        
+"""},
+        {1002: """
+pi = 3.14159
+raio = float(input())
+area = pi * (raio * raio)
+print("A=%.4f" % area)        
         """},
                 {1003: """
-        x = int(input())
-        y = int(input())
-        soma = x + y
-        print("SOMA = %s" % soma)          
+x = int(input())
+y = int(input())
+soma = x + y
+print("SOMA = %s" % soma)          
         """}]
 
         codigos_errados_python = \
             [
                 {1001: """
-        x = int(input())
-        y = int(input())
-        soma = x + y
-        print("Y = %s" % soma)        
+x = int(input())
+y = int(input())
+soma = x + y
+print("Y = %s" % soma)        
         """},
                 {1002: """
-        pi = 3.14159
-        raio = float(input())
-
-        area = pi * (raio * raio)
-
-        print("AREA=%.4f" % area)        
+pi = 3.14159
+raio = float(input())
+area = pi * (raio * raio)
+print("AREA=%.4f" % area)        
         """},
                 {1003: """
-        x = int(input())
-        y = int(input())
-        soma = x + y
-            print("SOMA = %s" % soma)          
+x = int(input())
+y = int(input())
+soma = x + y
+    print("SOMA = %s" % soma)          
         """}]
 
         codigos_corretos_java = \
             [
                 {1001: """
-        import java.util.Scanner;
-
-        public class file%s { 
-
-           public static void main(String []args) {
-
-             Scanner sc = new Scanner(System.in);
-             int x, y, soma;
-             x = sc.nextInt();
-             y = sc.nextInt();
-             soma = x + y;
-             System.out.println("X = " + soma);
-           }
-        }    
+import java.util.Scanner;
+public class file%s { 
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     int x, y, soma;
+     x = sc.nextInt();
+     y = sc.nextInt();
+     soma = x + y;
+     System.out.println("X = " + soma);
+   }
+}    
             """ % id},
                 {1002: """
-        import java.util.Scanner;
-        import java.util.Locale;
-        import java.text.DecimalFormat;
-
-        public class file%s {
-           public static void main(String []args) {
-             Scanner sc = new Scanner(System.in);
-             sc.useLocale(Locale.ENGLISH);
-             double raio, pi=3.14159, area;
-             raio = sc.nextDouble();
-             area = pi * (raio * raio);
-             DecimalFormat formato = new DecimalFormat("#.####");
-             String valor = String.valueOf(formato.format(area));
-             valor = valor.replace(",",".");
-             System.out.println("A=" + valor);
-           }
-        }    
+import java.util.Scanner;
+import java.util.Locale;
+import java.text.DecimalFormat;
+public class file%s {
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     sc.useLocale(Locale.ENGLISH);
+     double raio, pi=3.14159, area;
+     raio = sc.nextDouble();
+     area = pi * (raio * raio);
+     DecimalFormat formato = new DecimalFormat("#.####");
+     String valor = String.valueOf(formato.format(area));
+     valor = valor.replace(",",".");
+     System.out.println("A=" + valor);
+   }
+}    
             """ % id},
                 {1003: """
-        import java.util.Scanner;
-
-        public class file%s { 
-
-           public static void main(String []args) {
-
-             Scanner sc = new Scanner(System.in);
-             int x, y, soma;
-             x = sc.nextInt();
-             y = sc.nextInt();
-             soma = x + y;
-             System.out.println("SOMA = " + soma);
-           }
-        }    
+import java.util.Scanner;
+public class file%s { 
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     int x, y, soma;
+     x = sc.nextInt();
+     y = sc.nextInt();
+     soma = x + y;
+     System.out.println("SOMA = " + soma);
+   }
+}    
             """ % id}
             ]
 
         codigos_errados_java = \
             [
                 {1001: """
-        import java.util.Scanner;
-
-        public class file%s { 
-
-           public static void main(String []args) {
-
-             Scanner sc = new Scanner(System.in);
-             int x, y, soma;
-             x = sc.nextInt();
-             y = sc.nextInt();
-             soma = x + y;
-             System.out.println("X = " + soma)
-           }
-        }    
+import java.util.Scanner;
+public class file%s { 
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     int x, y, soma;
+     x = sc.nextInt();
+     y = sc.nextInt();
+     soma = x + y;
+     System.out.println("X = " + soma)
+   }
+}    
             """ % id},
                 {1002: """
-        import java.util.Scanner;
-        import java.util.Locale;
-        import java.text.DecimalFormat;
-
-        public class file%s {
-           public static void main(String []args) {
-             Scanner sc = new Scanner(System.in);
-             sc.useLocale(Locale.ENGLISH);
-             double raio, pi=3.14159, area;
-             raio = sc.nextDouble();
-             area = pi * (raio * raio);
-             DecimalFormat formato = new DecimalFormat("#.####");
-             String valor = String.valueOf(formato.format(area));             
-             System.out.println("A=" + valor);
-           }
-        }    
+import java.util.Scanner;
+import java.util.Locale;
+import java.text.DecimalFormat;
+public class file%s {
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     sc.useLocale(Locale.ENGLISH);
+     double raio, pi=3.14159, area;
+     raio = sc.nextDouble();
+     area = pi * (raio * raio);
+     DecimalFormat formato = new DecimalFormat("#.####");
+     String valor = String.valueOf(formato.format(area));             
+     System.out.println("A=" + valor);
+   }
+}    
             """ % id},
                 {1003: """
-        import java.util.Scanner;
-
-        public class file%s { 
-
-           public static void main(String []args) {
-
-             Scanner sc = new Scanner(System.in);
-             int x, y, soma;
-             x = sc.nextInt();
-             y = sc.nextInt();
-             soma = x + y;
-             System.out.println("soma=" + soma);
-           }
-        }    
+import java.util.Scanner;
+public class file%s { 
+   public static void main(String []args) {
+     Scanner sc = new Scanner(System.in);
+     int x, y, soma;
+     x = sc.nextInt();
+     y = sc.nextInt();
+     soma = x + y;
+     System.out.println("soma=" + soma);
+   }
+}    
             """ % id}
             ]
 
@@ -486,9 +424,6 @@ def Main():
 
     buscar_submissoes = Thread(target=BuscarSubmissoes)
     buscar_submissoes.start()
-
-    compilando = Thread(target=Compilando)
-    compilando.start()
 
     bot = Thread(target=Bot)
     bot.start()
