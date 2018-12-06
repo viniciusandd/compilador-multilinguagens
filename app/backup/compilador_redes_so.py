@@ -5,15 +5,15 @@ import subprocess
 from difflib import SequenceMatcher
 
 class Database():
-    def __init__(self, ip, banco, usuario, senha):
+    def __init__(self, banco, usuario, senha):
         try:
             self.connection = psycopg2.connect(
-                "dbname='%s' user='%s' host='%s' password='%s' port='5432'" % (banco, usuario, ip, senha))
+                "dbname='%s' user='%s' host='localhost' password='%s' port='5432'" % (banco, usuario, senha))
             self.connection.autocommit = True
             self.cursor = self.connection.cursor()
             print("Conexao com o banco de dados efetuada com sucesso")
-        except Exception as e:
-            print("Erro ao conectar no database: %s" % e)
+        except:
+            print("Erro ao conectar no database!")
 
     def query(self, sql):
         self.cursor.execute(sql)
@@ -24,12 +24,11 @@ class Database():
         self.cursor.execute(sql)
 
 fila_submissoes = []
-ip        = input()
-banco     = input()
-usuario   = input()
-senha     = input()
-database  = Database(ip, banco, usuario, senha)
-DIRETORIO = "/home/vinicius/Documentos/Python/compilador/arquivos/"
+banco     = input("Informe o nome do banco de dados: ")
+usuario   = input("Informe o nome do usuario para logar no database: ")
+senha     = input("Informe sua senha para logar no database: ")
+database  = Database(banco, usuario, senha)
+DIRETORIO = "/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/"
 
 def BuscarSubmissoes():
     global fila_submissoes, database, bloqueio
@@ -61,22 +60,22 @@ def Script(arquivo, linguagem, problema):
     # 2 - Python
     # 3 - Java
 
-    entrada_1 = '%sentradas/1.in' % DIRETORIO
-    entrada_2 = '%sentradas/2.in' % DIRETORIO
-    entrada_3 = '%sentradas/3.in' % DIRETORIO
-    saida_1   = '%ssaidas/1.out' % DIRETORIO
-    saida_2   = '%ssaidas/2.out' % DIRETORIO
-    saida_3   = '%ssaidas/3.out' % DIRETORIO
+    entrada_1001 = '%sentradas/1001.in' % DIRETORIO
+    entrada_1002 = '%sentradas/1002.in' % DIRETORIO
+    entrada_1003 = '%sentradas/1003.in' % DIRETORIO
+    saida_1001   = '%ssaidas/1001.out' % DIRETORIO
+    saida_1002   = '%ssaidas/1002.out' % DIRETORIO
+    saida_1003   = '%ssaidas/1003.out' % DIRETORIO
 
-    if problema == 1:
-        entrada = entrada_1
-        saida = saida_1
-    elif problema == 2:
-        entrada = entrada_2
-        saida = saida_2
-    elif problema == 3:
-        entrada = entrada_3
-        saida = saida_3
+    if problema == 1001:
+        entrada = entrada_1001
+        saida = saida_1001
+    elif problema == 1002:
+        entrada = entrada_1002
+        saida = saida_1002
+    elif problema == 1003:
+        entrada = entrada_1003
+        saida = saida_1003
 
     if linguagem == 1:
         compilar = "g++ %sfile%s.cpp -o %scompilacoes/file%s 2> " \
@@ -95,8 +94,6 @@ def Script(arquivo, linguagem, problema):
         executar = "python %sfile%s.pyc < %s > %scompilacoes/file%s.txt" % (DIRETORIO, arquivo, entrada, DIRETORIO, arquivo)
 
     elif linguagem == 3:
-	MudarClasseArquivosJava("file%s" % arquivo)
-
         compilar = "javac %sfile%s.java 2> " \
                    "%serros/erros_file%s.txt && echo 'Compilado com sucesso' || " \
                    "cat %serros/erros_file%s.txt" % (DIRETORIO, arquivo, DIRETORIO, arquivo, DIRETORIO, arquivo)
@@ -108,32 +105,21 @@ def Script(arquivo, linguagem, problema):
     if compilacao.decode('utf-8').strip() == 'Compilado com sucesso':
         print("Compilado com sucesso: file%s" % arquivo)
 
-	executou = True
-        try:
-		subprocess.check_output(executar, shell=True)
-	except Exception as e:
-	        print("Erro na execucao: %s" % e)
-		executou = False
+        subprocess.check_output(executar, shell=True)
 
-	if executou:
-		resposta = CalcularPercentualDeErro("%scompilacoes/file%s.txt" % (DIRETORIO, arquivo), saida)
-		if float(resposta) <= 0:
-		    print("Resposta correta: file%s" % arquivo)
-		    AtualizarCompilacao("Correta", "Solucao compilada e executada com sucesso", arquivo)
-		else:
-		    print("Resposta %s incorreta: file%s" % (resposta, arquivo))
-		    AtualizarCompilacao("Incorreta", "Solucao incorreta: %s" % resposta + "%", arquivo)	
-	else:
-		print("Resposta 100% incorreta!")
-		AtualizarCompilacao("Incorreta", "Solucao incorreta: 100.0%", arquivo)			
-
-
+        resposta = CalcularPercentualDeErro("%scompilacoes/file%s.txt" % (DIRETORIO, arquivo), saida)
+        if float(resposta) <= 0:
+            print("Resposta correta: file%s" % arquivo)
+            AtualizarCompilacao("Correta", "Solucao compilada e executada com sucesso", arquivo)
+        else:
+            print("Resposta %s incorreta: file%s" % (resposta, arquivo))
+            AtualizarCompilacao("Incorreta", "Solucao incorreta: %s" % resposta + "%", arquivo)
 
     else:
         print("Erro ao compilar: file%s" % arquivo)
         compilacao_frmt = compilacao.decode('utf-8')
         AtualizarCompilacao("Erro de compilacao", compilacao_frmt.replace("'", "|").
-                            replace("/home/vinicius/Documentos/Python/compilador/arquivos/", ""), arquivo)
+                            replace("/home/vinicius/Documentos/Python/compilador-multilinguagens/arquivos/", ""), arquivo)
 
 def CalcularPercentualDeErro(arquivo, saida):
     compilacao     = open(arquivo).read()
@@ -142,15 +128,6 @@ def CalcularPercentualDeErro(arquivo, saida):
     resposta       = percent.ratio() * 100
     erro           = "%.2f" % (100.0 - resposta)
     return erro
-
-def MudarClasseArquivosJava(arquivo):
-	f = open("%s%s.java" % (DIRETORIO, arquivo), 'r')
-	retorno = f.read()
-	f.close()
-
-	f = open("%s%s.java" % (DIRETORIO, arquivo), 'w') 
-	f.write(retorno.replace("public class Main", "public class %s" % arquivo))
-	f.close()
 
 def Main():
 
